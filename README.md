@@ -28,7 +28,7 @@ It is meant to be a starting point for future projects that need to connect to t
 ### Prerequisites
 
 > - [golang](https://golang.org/dl/)
-> - [UFL VPN](https://www.ufl.edu/its/services/networking/vpn/)
+> - [UFL VPN]https://net-services.ufl.edu/provided-services/vpn/clients/)
 
 ### Dependencies
 
