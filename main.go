@@ -6,10 +6,17 @@ import (
 	"time"
 )
 
+
 func main() {
-	var t = time.Now()
-	Connect()
+	t := time.Now()
+	conn := Connect()
 	fmt.Println("Time Elapsed", time.Since(t).Milliseconds())
+
+	t = time.Now()
+	RunTestQueries(conn)
+	fmt.Println("Time Elapsed", time.Since(t).Milliseconds())
+
+	defer Disconnect(conn)
 }
 
 func handleError(msg string, err error) {

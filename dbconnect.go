@@ -4,40 +4,38 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"time"
 
 	_ "github.com/sijms/go-ora/v2"
 )
 
-var dbParams = map[string]string{
-	"sid":        "orcl",
-	"username":       os.Getenv("UFL_USERNAME"),
-	"server":         "oracle.cise.ufl.edu",
-	"port":           "1521",
-	"password":       os.Getenv("ORACLE_PASSWORD"),
+var cred = map[string]string{
+	"username":		os.Getenv("UFL_USERNAME"),
+	"pw":		os.Getenv("ORACLE_PASSWORD"),
+	"server":		"oracle.cise.ufl.edu",
+	"port":			"1521",
+	"sid":			"orcl",
 }
 
-func Connect() {
-	connectionString := "oracle://" + dbParams["username"] + ":" + dbParams["password"] + "@" + dbParams["server"] + ":" + dbParams["port"] + "/" + dbParams["sid"] + "?parseTime=true"
-
-	db, err := sql.Open("oracle", connectionString)
+func Connect() (**sql.DB) {
+	connString := "oracle://" + cred["username"] + ":" + cred["pw"] +
+		"@" + cred["server"] + ":" + cred["port"] + "/" + cred["sid"]
+	
+	db, err := sql.Open("oracle", connString)
 	if err != nil {
 		panic(fmt.Errorf("error in sql.Open: %w", err))
 	}
-	defer func() {
-		err = db.Close()
-		if err != nil {
-			fmt.Println("Can't close connection: ", err)
-		}
-	}()
 
 	err = db.Ping()
 	if err != nil {
 		panic(fmt.Errorf("error pinging db: %w", err))
 	}
+	return &db
+}
 
-	
-	var t = time.Now()
-	RunTestQueries(db)
-	fmt.Println("Time Elapsed", time.Since(t).Milliseconds())
+func Disconnect(conn **sql.DB) () {
+	db := *conn
+	err := db.Close()
+	if err != nil {
+		fmt.Println("Can't close connection: ", err)
+	}
 }

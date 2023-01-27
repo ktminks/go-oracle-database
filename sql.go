@@ -10,7 +10,9 @@ const createTableStatement = "CREATE TABLE TEMP_TABLE ( NAME VARCHAR2(100), CREA
 const dropTableStatement = "DROP TABLE TEMP_TABLE PURGE"
 const insertStatement = "INSERT INTO TEMP_TABLE ( NAME , VALUE) VALUES (:name, :value)"
 
-func RunTestQueries(db *sql.DB) {
+func RunTestQueries(conn **sql.DB) {
+	db := *conn
+
 	// var queryResultColumnOne string
 	// row := db.QueryRow("SELECT systimestamp FROM dual")
 	// err := row.Scan(&queryResultColumnOne)
