@@ -5,44 +5,22 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	_ "github.com/sijms/go-ora/v2"
 )
 
-var localDB = map[string]string{
-	"service":  "XE",
-	"username": "demo",
-	"server":   "localhost",
-	"port":     "1521",
-	"password": "demo",
-}
-
 var autonomousDB = map[string]string{
-	"service":        "k8j2fvxbaujdcfy_daprdb_low.adb.oraclecloud.com",
-	"username":       "demo",
-	"server":         "adb.us-ashburn-1.oraclecloud.com",
-	"port":           "1522",
-	"password":       "Modem123mode",
-	"walletLocation": "/home/lucas/dapr-work/components-contrib/state/oracledatabase/Wallet_daprDB/",
+	"service":        "orcl",
+	"username":       os.Getenv("UFL_USERNAME"),
+	"server":         "oracle.cise.ufl.edu",
+	"port":           "1521",
+	"password":       os.Getenv("ORACLE_PASSWORD"),
 }
 
 func main() {
-	fmt.Println("*** Using only go_ora package (no additional client software)")
-	fmt.Println("Local Database, simple connect string ")
-	t := time.Now()
-	doDBThings(localDB)
-	fmt.Println("Time Elapsed", time.Now().Sub(t).Milliseconds())
-	fmt.Println("Autonomous based on wallet is next ")
-	t = time.Now()
-	doDBThings(autonomousDB)
-	fmt.Println("Time Elapsed", time.Now().Sub(t).Milliseconds())
+	var t = time.Now()
 
-	fmt.Println("*** Using Instant Client & GoDrOr package")
-	fmt.Println("Local Database, simple connect string ")
-	t = time.Now()
-	doDBThingsThroughInstantClient(localDB)
-	fmt.Println("Time Elapsed", time.Now().Sub(t).Milliseconds())
-	fmt.Println("Autonomous based on wallet is next ")
-	t = time.Now()
-	doDBThingsThroughInstantClient(autonomousDB)
+	doDBThings(autonomousDB)
 	fmt.Println("Time Elapsed", time.Now().Sub(t).Milliseconds())
 }
 
@@ -57,16 +35,39 @@ const createTableStatement = "CREATE TABLE TEMP_TABLE ( NAME VARCHAR2(100), CREA
 const dropTableStatement = "DROP TABLE TEMP_TABLE PURGE"
 const insertStatement = "INSERT INTO TEMP_TABLE ( NAME , VALUE) VALUES (:name, :value)"
 
+
+func doDBThings(dbParams map[string]string) {
+	connectionString := "oracle://" + dbParams["username"] + ":" + dbParams["password"] + "@" + dbParams["server"] + ":" + dbParams["port"] + "/" + dbParams["service"]
+
+	db, err := sql.Open("oracle", connectionString)
+	if err != nil {
+		panic(fmt.Errorf("error in sql.Open: %w", err))
+	}
+	defer func() {
+		err = db.Close()
+		if err != nil {
+			fmt.Println("Can't close connection: ", err)
+		}
+	}()
+
+	err = db.Ping()
+	if err != nil {
+		panic(fmt.Errorf("error pinging db: %w", err))
+	}
+
+	someAdditionalActions(db)
+}
+
 func someAdditionalActions(db *sql.DB) {
 
-	var queryResultColumnOne string
-	row := db.QueryRow("SELECT systimestamp FROM dual")
-	err := row.Scan(&queryResultColumnOne)
-	if err != nil {
-		panic(fmt.Errorf("error scanning db: %w", err))
-	}
-	fmt.Println("The time in the database ", queryResultColumnOne)
-	_, err = db.Exec(createTableStatement)
+	// var queryResultColumnOne string
+	// row := db.QueryRow("SELECT systimestamp FROM dual")
+	// err := row.Scan(&queryResultColumnOne)
+	// if err != nil {
+	// 	panic(fmt.Errorf("error scanning db: %w", err))
+	// }
+	// fmt.Println("The time in the database ", queryResultColumnOne)
+	_, err := db.Exec(createTableStatement)
 	handleError("create table", err)
 	defer db.Exec(dropTableStatement)
 	stmt, err := db.Prepare(insertStatement)
@@ -79,7 +80,7 @@ func someAdditionalActions(db *sql.DB) {
 	var queryResultName string
 	var queryResultTimestamp string
 	var queryResultValue int32
-	row = db.QueryRow("SELECT name, creation_time, value FROM temp_table")
+	row := db.QueryRow("SELECT name, creation_time, value FROM temp_table")
 	err = row.Scan(&queryResultName, &queryResultTimestamp, &queryResultValue)
 	handleError("query single row", err)
 	if err != nil {
